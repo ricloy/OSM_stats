@@ -1,0 +1,43 @@
+# This is a basic workflow to help you get started with Actions
+
+name: update stats from OpenStreetMap
+
+# Controls when the workflow will run
+on:
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    - cron:  '00 00 * * *'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v4
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: curl parallel
+          version: 1.0
+      - name: preparation
+        run: |
+          mkdir -p ./log
+          mkdir -p ./out
+      - name: run-body
+        run: bash ./src/update.sh || echo "Bash script exited with error code $?" >>./log/action_$(date -Imin).halted
+
+# push changes to GITHUB
+      - name: push changes
+        run: |
+          git config --local user.email "ricloy@users.noreply.github.com"
+          git config --local user.name "actionman"
+          git add -A
+          git commit -m "Updated stats" || exit 0
+          git push
